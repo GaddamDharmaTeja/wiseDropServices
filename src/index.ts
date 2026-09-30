@@ -1,18 +1,17 @@
-import 'dotenv/config';
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
-import { pipeline } from 'node:stream/promises';
-import { createWriteStream } from 'node:fs';
-import argon2 from 'argon2';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import fastifyStatic from '@fastify/static';
+import argon2 from 'argon2';
+import 'dotenv/config';
 import Fastify from 'fastify';
 import jwt from 'jsonwebtoken';
 import mongoose, { Schema } from 'mongoose';
+import crypto from 'node:crypto';
+import fs, { createWriteStream } from 'node:fs';
+import path from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import { z } from 'zod';
 
 import { contributePage, contributeUnavailablePage } from './contribute-page.js';
@@ -104,26 +103,12 @@ const notFound = (message: string) => Object.assign(new Error(message), { status
 const ownedPersonId = async (ownerId: string, personId?: string) => { if (!personId) return undefined; if (!mongoose.isValidObjectId(personId) || !(await Person.exists({ _id: personId, ownerId }))) throw notFound('Person not found.'); return personId; };
 const visibleWishes = async (surpriseId: unknown) => (await Wish.find({ surpriseId, moderation: 'visible' }).sort({ createdAt: 1 }).limit(200)).map(serializeWish);
 const openForWishes = async (token: string) => { const surprise = await Surprise.findOne({ contributeTokenHash: hashToken(token) }); if (!surprise || surprise.allowWishes === false || surprise.status === 'expired' || (surprise.expiresAt && surprise.expiresAt <= new Date())) throw notFound('This invite is no longer accepting wishes.'); return surprise; };
-const isRevealOpen = (surprise: { status?: string; opensAt?: Date; expiresAt?: Date }, now = new Date()) => {
-  if (!surprise || surprise.status === 'draft' || surprise.status === 'expired') return false;
+//const isRevealOpen = (surprise: { status?: string; opensAt?: Date; expiresAt?: Date }, now = new Date()) => {
+const isRevealOpen = (surprise: { status?: string; opensAt?: Date | null; expiresAt?: Date | null }, now = new Date()) => { 
+if (!surprise || surprise.status === 'draft' || surprise.status === 'expired') return false;
   if (!surprise.opensAt || !surprise.expiresAt) return false;
   if (surprise.opensAt > now || surprise.expiresAt <= now) return false;
   return true;
-};
-const openForReveal = async (token: string) => {
-  const surprise = await Surprise.findOne({ shareTokenHash: hashToken(token) });
-  const now = new Date();
-  if (!surprise || surprise.status === 'draft') throw notFound('This surprise is not available right now.');
-  if (surprise.status === 'scheduled' && surprise.opensAt && surprise.opensAt <= now) {
-    surprise.status = 'live';
-    await surprise.save();
-  }
-  if (surprise.expiresAt && surprise.expiresAt <= now && surprise.status !== 'expired') {
-    surprise.status = 'expired';
-    await surprise.save();
-  }
-  if (!isRevealOpen(surprise, now)) throw notFound('This surprise is not available right now.');
-  return surprise;
 };
 
 await app.register(helmet, {
