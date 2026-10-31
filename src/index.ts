@@ -49,7 +49,7 @@ fs.mkdirSync(uploadsDir, { recursive: true });
 
 const app = Fastify({ logger: { redact: ['req.headers.authorization', 'body.password', 'body.pin', 'body.refreshToken'] } });
 
-const userSchema = new Schema({ name: { type: String, required: true }, email: { type: String, unique: true, sparse: true, lowercase: true }, phoneNumber: { type: String, unique: true, sparse: true }, passwordHash: { type: String, required: true }, birthday: String, analyticsConsent: { type: Boolean, default: false }, language: { type: String, enum: ['en', 'hi', 'es', 'fr'], default: 'en' }, lifecycle: { type: String, enum: ['active', 'suspended'], default: 'active' }, role: { type: String, enum: ['user', 'admin'], default: 'user', index: true } }, { timestamps: true });
+const userSchema = new Schema({ name: { type: String, required: true }, email: { type: String, unique: true, sparse: true, lowercase: true }, phoneNumber: { type: String, unique: true, sparse: true }, passwordHash: { type: String, required: true }, birthday: String, analyticsConsent: { type: Boolean, default: false }, language: { type: String, enum: ['en', 'hi', 'te', 'kn', 'ta', 'es', 'fr'], default: 'en' }, lifecycle: { type: String, enum: ['active', 'suspended'], default: 'active' }, role: { type: String, enum: ['user', 'admin'], default: 'user', index: true } }, { timestamps: true });
 const sessionSchema = new Schema({ userId: { type: Schema.Types.ObjectId, required: true, index: true }, refreshTokenHash: { type: String, required: true }, revokedAt: Date, expiresAt: { type: Date, required: true, index: { expires: 0 } } }, { timestamps: true });
 const passwordResetSchema = new Schema({ userId: { type: Schema.Types.ObjectId, required: true, index: true }, tokenHash: { type: String, required: true, index: true }, expiresAt: { type: Date, required: true, index: { expires: 0 } }, usedAt: Date }, { timestamps: true });
 const surpriseSchema = new Schema(
@@ -103,6 +103,17 @@ const appSettingsSchema = new Schema({ appName: { type: String, default: 'WishDr
 const adminNotificationSchema = new Schema({ type: { type: String, required: true }, title: { type: String, required: true }, body: { type: String, required: true }, refId: String, readAt: Date }, { timestamps: true });
 const frameSchema = new Schema({ key: { type: String, required: true, unique: true, index: true }, title: { type: String, required: true }, imageUrl: { type: String, required: true }, active: { type: Boolean, default: true }, sortOrder: { type: Number, default: 0 } }, { timestamps: true });
 const User = mongoose.model('User', userSchema); const Session = mongoose.model('Session', sessionSchema); const PasswordReset = mongoose.model('PasswordReset', passwordResetSchema); const Surprise = mongoose.model('Surprise', surpriseSchema); const Reaction = mongoose.model('Reaction', reactionSchema); const Job = mongoose.model('Job', jobSchema); const Device = mongoose.model('Device', deviceSchema); const Person = mongoose.model('Person', personSchema); const Wish = mongoose.model('Wish', wishSchema); const MediaMeta = mongoose.model('MediaMeta', mediaMetaSchema); const Report = mongoose.model('Report', reportSchema); const AppSettings = mongoose.model('AppSettings', appSettingsSchema); const AdminNotification = mongoose.model('AdminNotification', adminNotificationSchema); const Frame = mongoose.model('Frame', frameSchema);
+
+const ensureUserIndexes = async () => {
+  const indexes = await User.collection.indexes();
+  const emailIndex = indexes.find(index => index.name === 'email_1');
+  // Older deployments indexed missing email values as the same `null` value,
+  // preventing more than one phone-only account from being registered.
+  if (emailIndex && (!emailIndex.unique || !emailIndex.sparse)) {
+    await User.collection.dropIndex('email_1');
+  }
+  await User.collection.createIndex({ email: 1 }, { name: 'email_1', unique: true, sparse: true });
+};
 
 type TokenPayload = { sub: string; sid: string };
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
@@ -315,6 +326,8 @@ const openForReveal = async (token: string) => {
 };
 
 await app.register(helmet, {
+  // Expo web (e.g. :8081) loads API media from another origin (:3001).
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -341,8 +354,12 @@ await app.register(rateLimit, {
   allowList: request => request.method === 'OPTIONS',
 });
 await app.register(multipart, { limits: { fileSize: 80 * 1024 * 1024, files: 1 } });
-await app.register(fastifyStatic, { root: uploadsDir, prefix: '/media/', decorateReply: false });
-await app.register(fastifyStatic, { root: framesDir, prefix: '/frames/', decorateReply: false });
+const publicAssetHeaders = (reply: { header: (name: string, value: string) => unknown }) => {
+  reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+};
+await app.register(fastifyStatic, { root: uploadsDir, prefix: '/media/', decorateReply: false, setHeaders: publicAssetHeaders });
+await app.register(fastifyStatic, { root: framesDir, prefix: '/frames/', decorateReply: false, setHeaders: publicAssetHeaders });
 app.get('/media/gridfs/:id', async (request, reply) => {
   const { id } = request.params as { id: string };
   if (!mongoose.isObjectIdOrHexString(id)) throw notFound('Media not found.');
@@ -351,6 +368,7 @@ app.get('/media/gridfs/:id', async (request, reply) => {
   const file = await mongoose.connection.db!.collection('uploads.files').findOne({ _id: fileId });
   if (!file) throw notFound('Media not found.');
   reply.type(String(file.contentType || 'application/octet-stream'));
+  reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
   reply.header('Cache-Control', 'public, max-age=31536000, immutable');
   return reply.send(bucket.openDownloadStream(fileId));
 });
@@ -551,7 +569,7 @@ app.patch('/v1/users/me', async request => {
       name: z.string().trim().min(2).max(80).optional(),
       birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
       analyticsConsent: z.boolean().optional(),
-      language: z.enum(['en', 'hi', 'es', 'fr']).optional(),
+      language: z.enum(['en', 'hi', 'te', 'kn', 'ta', 'es', 'fr']).optional(),
     }),
     request.body,
   );
@@ -799,7 +817,8 @@ const saveUploadedFile = async (file: { mimetype: string; filename?: string; fil
   const id = String(upload.id);
   const filename = id;
   const kind = file.mimetype.startsWith('video/') ? 'video' : file.mimetype.startsWith('audio/') ? 'audio' : 'image';
-  const publicUrl = `${env.PUBLIC_API_BASE_URL.replace(/\/$/, '')}/media/gridfs/${id}`;
+  // Store a host-relative path so LAN IP / localhost changes don't break reveal pages.
+  const publicUrl = `/media/gridfs/${id}`;
   const media = { id, kind, uri: publicUrl, name: file.filename || filename };
   await rememberMedia([media], { ownerId, expiresAt });
   return media;
@@ -934,6 +953,7 @@ registerAdminRoutes(
 );
 
 await mongoose.connect(env.MONGODB_URI);
+await ensureUserIndexes();
 await seedAdminUser(User, { email: env.ADMIN_EMAIL, password: env.ADMIN_PASSWORD, name: env.ADMIN_NAME });
 await seedFrames();
 if (env.SMTP_HOST && !mailConfig) {

@@ -176,7 +176,7 @@ export const revealStyles = `
   }
   .public-shell { width: min(1600px, 100%); padding: 0; text-align: left; }
   .public-shell > .brand { position: fixed; top: 24px; left: 42px; z-index: 5; color: #24164a; font-size: 1.25rem; margin: 0; text-shadow: 0 2px 16px rgba(255,255,255,.85); }
-  .surprise-app { position: relative; min-height: 100vh; overflow: hidden; color: #24164a; background: linear-gradient(145deg, rgba(255,243,250,.88), rgba(244,229,255,.88) 48%, rgba(255,242,247,.9)); }
+  .surprise-app { position: relative; min-height: 100vh; overflow: visible; color: #24164a; background: linear-gradient(145deg, rgba(255,243,250,.88), rgba(244,229,255,.88) 48%, rgba(255,242,247,.9)); }
   .surprise-app.has-frame { background: radial-gradient(circle at 15% 20%, rgba(255,255,255,.88), transparent 30%), radial-gradient(circle at 85% 25%, rgba(255,199,229,.9), transparent 28%), linear-gradient(145deg, #fff5fb 0%, #f5e9ff 52%, #ffe8f3 100%); }
   .surprise-app .frame-art { position: fixed; opacity: .14; filter: saturate(1.12) blur(0); transition: opacity .3s ease; }
   html[data-view="landing"] .surprise-app .frame-art { opacity: .08; }
@@ -219,8 +219,9 @@ export const revealStyles = `
   @media (max-width: 600px) { .public-shell > .brand { position: absolute; top: 18px; left: 20px; } .public-topbar { top: 12px; right: 12px; } .public-pill { padding: 10px 14px; font-size:.85rem; } .public-view { padding: 92px 14px 30px; } .landing-title { font-size: 3.2rem; } .landing-cta { min-width: 220px; } .wish-grid, .memory-grid { grid-template-columns: 1fr; } .memory-card img { height: 220px; } .stat-card { min-width: 112px; padding: 12px; } }
   /* Surprise experience rebuild */
   .public-shell .footer { display:none; }
-  .public-shell { max-width:none; min-height:100vh; }
-  .surprise-app { min-height:100vh; background:linear-gradient(145deg,#fff1f8 0%,#f3e7ff 52%,#ffe9f1 100%); }
+  .public-shell { max-width:none; min-height:100vh; overflow:visible; }
+  body:has(.public-shell) { display:block; place-items:unset; min-height:100vh; overflow:auto; }
+  .surprise-app { min-height:100vh; overflow:visible; background:linear-gradient(145deg,#fff1f8 0%,#f3e7ff 52%,#ffe9f1 100%); }
   .surprise-app.has-frame { background:linear-gradient(145deg,#fff1f8 0%,#f3e7ff 52%,#ffe9f1 100%); }
   .surprise-app .frame-art, .surprise-app .frame-shade { display:none; }
   .surprise-app:before, .surprise-app:after { content:""; position:fixed; z-index:0; pointer-events:none; border-radius:50%; filter:blur(3px); }
@@ -231,25 +232,31 @@ export const revealStyles = `
   .public-topbar { position:fixed; top:18px; right:32px; }
   .public-pill { box-shadow:0 12px 24px rgba(91,30,146,.12); color:#6b21c5; }
   .public-view { padding:112px clamp(18px,5vw,80px) 70px; }
-  .landing-view { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; overflow:hidden; }
+  .landing-view { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; overflow:visible; padding-top:96px; padding-bottom:48px; }
   .landing-view:before { content:"🎈  💜  🎈"; position:absolute; top:15%; left:4%; font-size:clamp(2rem,5vw,5rem); opacity:.75; transform:rotate(-12deg); letter-spacing:24px; }
   .landing-view:after { content:"🎁  💗  ✨"; position:absolute; right:4%; bottom:14%; font-size:clamp(2rem,5vw,5rem); opacity:.72; transform:rotate(10deg); letter-spacing:16px; }
   .landing-view > * { position:relative; z-index:1; }
   .hero-bear { position:absolute; z-index:1; left:4%; bottom:8%; font-size:clamp(5rem,13vw,12rem); filter:drop-shadow(0 20px 22px rgba(102,34,120,.2)); transform:rotate(-4deg); }
   .hero-bear span { position:absolute; left:42%; top:44%; font-size:clamp(2rem,4vw,4rem); }
   .hero-scrap { position:absolute; z-index:1; right:4%; top:24%; display:grid; gap:14px; transform:rotate(4deg); }
-  .hero-scrap img { width:clamp(90px,10vw,150px); height:clamp(90px,10vw,150px); object-fit:cover; padding:8px; background:#fff; box-shadow:0 12px 20px rgba(67,22,92,.18); }
-  .landing-gift { font-size:clamp(3rem,6vw,5.5rem); margin-bottom:4px; }
-  .landing-view-eyebrow { padding:9px 18px; border-radius:999px; background:rgba(123,47,247,.1); color:#7b2ff7; letter-spacing:.18em; }
-  .landing-title { max-width:1000px; margin:22px auto 0; font-family:"Trebuchet MS",cursive; font-size:clamp(3.2rem,7vw,7rem); line-height:.96; letter-spacing:-.07em; text-align:center; color:#35105f; text-shadow:0 8px 24px rgba(123,47,247,.13); }
+  .hero-scrap img, .hero-scrap video { width:clamp(90px,10vw,150px); height:clamp(90px,10vw,150px); object-fit:cover; padding:8px; background:#fff; box-shadow:0 12px 20px rgba(67,22,92,.18); border-radius:4px; }
+  .landing-creator-video { width:min(420px,86vw); margin:16px auto 8px; border-radius:20px; overflow:hidden; background:#1a0f33; box-shadow:0 14px 32px rgba(67,22,92,.2); border:3px solid rgba(255,255,255,.92); }
+  .landing-creator-video video { display:block; width:100%; max-height:min(28vh,240px); object-fit:contain; background:#1a0f33; }
+  .landing-creator-video small { display:block; padding:8px 12px; background:rgba(255,255,255,.92); color:#563d76; font-weight:700; text-align:center; font-size:.9rem; }
+  .landing-gift { font-size:clamp(2.4rem,5vw,4rem); margin-bottom:2px; }
+  .landing-view.has-creator-video .landing-gift { display:none; }
+  .landing-view-eyebrow { padding:8px 16px; border-radius:999px; background:rgba(123,47,247,.1); color:#7b2ff7; letter-spacing:.18em; }
+  .landing-title { max-width:920px; margin:12px auto 0; font-family:"Trebuchet MS",cursive; font-size:clamp(2.4rem,5.5vw,4.6rem); line-height:.96; letter-spacing:-.07em; text-align:center; color:#35105f; text-shadow:0 8px 24px rgba(123,47,247,.13); }
   .landing-title span { display:block; color:#ef258c; }
-  .landing-copy { max-width:650px; margin:24px auto 0; color:#563d76; font-size:clamp(1rem,1.6vw,1.3rem); text-align:center; line-height:1.5; }
-  .landing-stats { margin:34px auto 26px; }
-  .stat-card { min-width:170px; padding:17px 25px; border-radius:24px; background:rgba(255,255,255,.65); border:1px solid rgba(255,255,255,.95); box-shadow:0 16px 32px rgba(100,32,150,.12); }
-  .stat-card strong { color:#4d1599; font-size:2rem; }
+  .landing-copy { max-width:620px; margin:12px auto 0; color:#563d76; font-size:clamp(.95rem,1.5vw,1.1rem); text-align:center; line-height:1.45; }
+  .landing-message { max-width:520px; margin:12px auto 0; padding:12px 16px; border-radius:16px; background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.95); color:#35105f; font-size:.98rem; line-height:1.5; text-align:center; box-shadow:0 12px 28px rgba(91,30,146,.1); }
+  .landing-stats { display:flex; justify-content:center; gap:12px; margin:16px auto 14px; flex-wrap:wrap; }
+  .stat-card { min-width:150px; padding:14px 22px; border-radius:22px; background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.95); box-shadow:0 16px 32px rgba(100,32,150,.12); }
+  .stat-card strong { display:block; color:#4d1599; font-size:1.75rem; }
+  .stat-card small { color:#746f86; }
   .public-cta { background:linear-gradient(100deg,#ff725e,#f21c92 52%,#7b2ff7); box-shadow:0 14px 28px rgba(232,35,141,.25); }
-  .landing-cta { min-width:320px; font-size:1.1rem; }
-  .landing-scroll { color:#7c6c91; font-size:.95rem; margin-top:38px; }
+  .landing-cta { min-width:280px; font-size:1.05rem; }
+  .landing-scroll { color:#7c6c91; font-size:.95rem; margin-top:18px; }
   .view-heading { max-width:1200px; }
   .view-heading h1 { font-family:"Trebuchet MS",cursive; font-size:clamp(2.8rem,6vw,5.8rem); letter-spacing:-.06em; color:#35105f; }
   .view-heading p { color:#6a5681; }
@@ -269,6 +276,9 @@ export const revealStyles = `
   .media-badge { position:absolute; top:12px; right:12px; background:rgba(43,18,85,.72); color:#fff; padding:7px 10px; border-radius:999px; font-size:.78rem; }
   .memory-card { position:relative; cursor:pointer; }
   .memory-card video { width:100%; height:220px; object-fit:cover; display:block; }
+  .filter-empty { display:none; max-width:520px; margin:28px auto 0; padding:22px 18px; text-align:center; color:#6a5681; background:rgba(255,255,255,.7); border:1px solid rgba(255,255,255,.95); border-radius:20px; box-shadow:0 12px 28px rgba(91,30,146,.08); }
+  .filter-empty.visible { display:block; }
+  .filter-empty strong { display:block; color:#35105f; font-size:1.15rem; margin-bottom:6px; }
   .thanks-card { max-width:760px; background:rgba(255,255,255,.76); }
   .thanks-card h2 { color:#35105f; font-family:"Trebuchet MS",cursive; font-size:2rem; }
   .share-row button { background:rgba(255,255,255,.9); }
@@ -285,6 +295,8 @@ export const revealStyles = `
     .landing-view { min-height:100svh; justify-content:flex-start; padding-top:160px; }
     .landing-view:before { top:118px; left:50%; transform:translateX(-50%) rotate(-8deg); font-size:2rem; letter-spacing:10px; white-space:nowrap; }
     .landing-view:after, .hero-bear, .hero-scrap { display:none; }
+    .landing-creator-video { width:100%; max-width:360px; margin-bottom:14px; border-radius:18px; }
+    .landing-creator-video video { max-height:240px; }
     .landing-gift { font-size:3.6rem; margin-bottom:10px; }
     .landing-view-eyebrow { margin-top:0; padding:8px 14px; font-size:.68rem; }
     .landing-title { width:100%; max-width:360px; margin:18px auto 0; font-size:clamp(2.25rem,11vw,3rem); line-height:1; letter-spacing:-.06em; overflow-wrap:anywhere; }
@@ -310,15 +322,16 @@ const csp =
   "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' https: http:; connect-src 'self'; base-uri 'self'; form-action 'self'";
 
 function isPlayableUri(uri: string) {
-  return /^https?:\/\//i.test(uri);
+  return /^https?:\/\//i.test(uri) || uri.startsWith('/media/');
 }
 
-// LAN addresses can change between development sessions. Public reveal pages are
-// served by the same API that owns local /media files, so keep those URLs relative.
+// Public reveal pages are served by the same API that owns /media files.
+// Rewrite absolute hosts (localhost, LAN IPs, stale PUBLIC_API_BASE_URL) to relative paths.
 function publicMediaUri(uri: string) {
+  if (uri.startsWith('/media/') || uri.startsWith('/frames/')) return uri;
   try {
     const parsed = new URL(uri);
-    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(parsed.hostname) && parsed.port === '3001' && parsed.pathname.startsWith('/media/')) {
+    if (parsed.pathname.startsWith('/media/') || parsed.pathname.startsWith('/frames/')) {
       return `${parsed.pathname}${parsed.search}`;
     }
   } catch {
@@ -420,25 +433,42 @@ export function openRevealPage(surprise: {
   frameImageUrl?: string;
   thankYouMessage?: string;
 }) {
-  const allMedia = [...(surprise.media ?? []), ...(surprise.wishes ?? []).flatMap(wish => wish.media ?? [])].filter(item => isPlayableUri(item.uri));
+  // Creator media (compose uploads) vs contribute-link media (wishes) stay separate on the reveal page.
+  const creatorMedia = (surprise.media ?? []).filter(item => isPlayableUri(item.uri));
+  const contributeMedia = (surprise.wishes ?? []).flatMap(wish => wish.media ?? []).filter(item => isPlayableUri(item.uri));
+  const creatorVideo = creatorMedia.find(item => item.kind === 'video');
   const wishCount = surprise.wishes?.length ?? 0;
-  const photoCount = allMedia.filter(item => item.kind === 'image').length;
-  const peopleCount = new Set((surprise.wishes ?? []).map(wish => wish.authorName)).size;
+  const photoCount = contributeMedia.filter(item => item.kind === 'image').length;
+  const videoCount = contributeMedia.filter(item => item.kind === 'video').length;
+  const memoryCount = photoCount + videoCount;
+  const peopleCount = new Set((surprise.wishes ?? []).map(wish => wish.authorName)).size || 1;
   const nav = (view: string, label: string, active = false) => `<a class="${active ? 'active' : ''}" href="?view=${view}">${label}</a>`;
-  const stats = `<div class="landing-stats"><div class="stat-card"><strong>💗 ${wishCount}</strong><small>Wishes</small></div><div class="stat-card"><strong>▧ ${photoCount}</strong><small>Photos</small></div><div class="stat-card"><strong>♣ ${peopleCount}</strong><small>People</small></div></div>`;
+  const stats = `<div class="landing-stats"><div class="stat-card"><strong>💗 ${wishCount}</strong><small>Wishes</small></div><div class="stat-card"><strong>▧ ${memoryCount}</strong><small>Memories</small></div><div class="stat-card"><strong>♣ ${peopleCount}</strong><small>People</small></div></div>`;
   const wishCards = (surprise.wishes ?? []).map((wish, index) => {
     const image = wish.media?.find(item => item.kind === 'image' && isPlayableUri(item.uri));
     const initials = escape(wish.authorName.trim().slice(0, 2).toUpperCase() || '♡');
-    return `<article class="wish-card" data-kind="message${image ? ' photo' : ''}" data-search="${escape(`${wish.authorName} ${wish.message}`)}"><div style="display:flex;align-items:center;gap:10px"><span style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f21c92,#7526d9);color:#fff;font-weight:800">${initials}</span><div><strong>${escape(wish.authorName)}</strong><small>${escape(wish.createdAt ? new Date(wish.createdAt).toLocaleString() : 'A little while ago')}</small></div><button class="card-menu" type="button" aria-label="More options">⋮</button></div><p>${escape(wish.message).replace(/\n/g, '<br>')}</p>${image ? `<img src="${escape(publicMediaUri(image.uri))}" alt="${escape(image.name || 'Wish photo')}" />` : ''}<div style="display:flex;gap:16px;color:#7c5a98;margin-top:14px"><span>♥ ${index + 1}</span><span>◌ ${Math.max(1, index % 4)}</span><span style="color:#ed1c83">✨</span></div></article>`;
+    return `<article class="wish-card" data-kind="message${image ? ' photo' : ''}" data-search="${escape(`${wish.authorName} ${wish.message}`)}"><div style="display:flex;align-items:center;gap:10px"><span style="display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#f21c92,#7526d9);color:#fff;font-weight:800">${initials}</span><div><strong>${escape(wish.authorName)}</strong><small>${escape(wish.createdAt ? new Date(wish.createdAt).toLocaleString() : 'A little while ago')}</small></div><button class="card-menu" type="button" aria-label="More options">⋮</button></div><p>${escape(wish.message).replace(/\n/g, '<br>')}</p>${renderMediaHtml(wish.media)}<div style="display:flex;gap:16px;color:#7c5a98;margin-top:14px"><span>♥ ${index + 1}</span><span>◌ ${Math.max(1, index % 4)}</span><span style="color:#ed1c83">✨</span></div></article>`;
   }).join('');
-  const memoryCards = allMedia.map((item, index) => item.kind === 'video'
-    ? `<article class="memory-card" data-search="${escape(item.name || 'Video memory')}"><video controls playsinline preload="metadata" src="${escape(publicMediaUri(item.uri))}"></video><small>Memory ${index + 1} · Video</small></article>`
-    : `<article class="memory-card" data-search="${escape(item.name || 'Photo memory')}" data-lightbox="${escape(publicMediaUri(item.uri))}"><img src="${escape(publicMediaUri(item.uri))}" alt="${escape(item.name || 'Surprise memory')}" /><small>Memory ${index + 1} · Shared photo</small></article>`).join('');
-  const heroPhotos = allMedia.filter(item => item.kind === 'image').slice(0, 2);
-  const landing = `<section class="public-view landing-view" data-view="landing"><div class="public-topbar"><button class="public-pill" id="music">♫ &nbsp; Play Music</button><button class="public-pill" onclick="show('wishes')">•••</button></div><div class="hero-bear" aria-hidden="true">🧸<span>💗</span></div><div class="hero-scrap" aria-label="Shared memories">${heroPhotos.map(item => `<img src="${escape(publicMediaUri(item.uri))}" alt="${escape(item.name || 'Shared memory')}" />`).join('')}</div><div class="gift landing-gift">🎁</div><span class="eyebrow landing-view-eyebrow">${escape(surprise.occasion).toUpperCase()}</span><h1 class="landing-title">${escape(surprise.recipientName)}’s <span>${escape(surprise.occasion)} Surprise</span></h1><p class="landing-copy">A collection of lovely wishes, memories and messages from your friends and family</p>${stats}<button class="public-cta landing-cta" onclick="show('wishes')">Explore Your Wishes &nbsp; →</button><p class="landing-scroll">↓ &nbsp; Scroll to see all wishes</p></section>`;
-  const viewHeader = (title: string, subtitle: string, active: string) => `<div class="view-heading"><h1>${title}</h1><p>${subtitle}</p></div><nav class="view-tabs">${nav('landing', '♡ Home', active === 'landing')}${nav('wishes', `▦ All Wishes (${wishCount})`, active === 'wishes')}${nav('gallery', `▧ Memories (${photoCount})`, active === 'gallery')}${nav('thanks', '♡ Thank You', active === 'thanks')}</nav>`;
+  // Gallery shows only contribute-link uploads — not creator compose attachments.
+  const memoryCards = contributeMedia.filter(item => item.kind === 'image' || item.kind === 'video').map((item, index) => item.kind === 'video'
+    ? `<article class="memory-card" data-kind="video" data-search="${escape(item.name || 'Video memory')}"><video controls playsinline preload="metadata" src="${escape(publicMediaUri(item.uri))}"></video><small>Memory ${index + 1} · Shared video</small></article>`
+    : `<article class="memory-card" data-kind="image" data-search="${escape(item.name || 'Photo memory')}" data-lightbox="${escape(publicMediaUri(item.uri))}"><img src="${escape(publicMediaUri(item.uri))}" alt="${escape(item.name || 'Surprise memory')}" /><small>Memory ${index + 1} · Shared photo</small></article>`).join('');
+  const soundCards = contributeMedia.filter(item => item.kind === 'audio' || item.kind === 'music').map(item => `<article class="memory-card" data-search="${escape(item.name || 'Sound memory')}"><div style="padding:18px"><strong>${item.kind === 'music' ? '♫ Background music' : '♩ Voice note'}</strong><audio controls preload="metadata" src="${escape(publicMediaUri(item.uri))}"></audio></div><small>${escape(item.name || 'Shared sound')}</small></article>`).join('');
+  const heroScrap = contributeMedia
+    .filter(item => item.kind === 'image')
+    .slice(0, 2)
+    .map(item => `<img src="${escape(publicMediaUri(item.uri))}" alt="${escape(item.name || 'Shared memory')}" />`)
+    .join('');
+  const creatorVideoHtml = creatorVideo
+    ? `<div class="landing-creator-video"><video controls playsinline preload="metadata" src="${escape(publicMediaUri(creatorVideo.uri))}"></video><small>A video message for ${escape(surprise.recipientName)}</small></div>`
+    : '';
+  const landingMessage = surprise.message?.trim()
+    ? `<p class="landing-message">“${escape(surprise.message.trim())}”</p>`
+    : '';
+  const landing = `<section class="public-view landing-view${creatorVideo ? ' has-creator-video' : ''}" data-view="landing"><div class="public-topbar"><button class="public-pill" id="music">♫ &nbsp; Play Music</button><button class="public-pill" onclick="show('wishes')">•••</button></div><div class="hero-bear" aria-hidden="true">🧸<span>💗</span></div><div class="hero-scrap" aria-label="Shared memories">${heroScrap}</div><div class="gift landing-gift">🎁</div><span class="eyebrow landing-view-eyebrow">${escape(surprise.occasion).toUpperCase()}</span><h1 class="landing-title">${escape(surprise.recipientName)}’s <span>${escape(surprise.occasion)} Surprise</span></h1><p class="landing-copy">A collection of lovely wishes, memories and messages from your friends and family</p>${creatorVideoHtml}${landingMessage}${stats}<button class="public-cta landing-cta" onclick="show('wishes')">Explore Your Wishes &nbsp; →</button><p class="landing-scroll">↓ &nbsp; Open wishes${memoryCount ? ` · ${memoryCount} shared memor${memoryCount === 1 ? 'y' : 'ies'}` : ''}</p></section>`;
+  const viewHeader = (title: string, subtitle: string, active: string) => `<div class="view-heading"><h1>${title}</h1><p>${subtitle}</p></div><nav class="view-tabs">${nav('landing', '♡ Home', active === 'landing')}${nav('wishes', `▦ All Wishes (${wishCount})`, active === 'wishes')}${nav('gallery', `▧ Memories (${memoryCount})`, active === 'gallery')}${nav('thanks', '♡ Thank You', active === 'thanks')}</nav>`;
   const wishesView = `<section class="public-view" data-view="wishes">${viewHeader(`All ${escape(surprise.occasion)} Wishes<br>for ${escape(surprise.recipientName)} 💗`, 'So much love from amazing people like you!', 'wishes')}<div class="search-box"><input id="wish-search" type="search" placeholder="⌕  Search wishes by name or message..." aria-label="Search wishes" /></div><div class="view-tabs secondary-tabs"><a href="#" class="active" data-filter="all">▦ All Wishes</a><a href="#" data-filter="message">◌ Messages</a><a href="#" data-filter="photo">▧ Photos</a><a href="#" data-filter="all">⌂ From Family</a><a href="#" data-filter="all">♧ From Friends</a><a href="#" data-filter="all">▣ From Colleagues</a></div><div class="wish-grid" id="wish-grid">${wishCards || '<p class="muted">Your wishes will appear here.</p>'}</div></section>`;
-  const galleryView = `<section class="public-view" data-view="gallery">${viewHeader(`${escape(surprise.recipientName)}’s<br>Memories Gallery`, 'Moments captured with love by your amazing people 💗', 'gallery')}<div class="search-box"><input id="memory-search" type="search" placeholder="⌕  Search memories..." aria-label="Search memories" /></div><div class="view-tabs secondary-tabs"><a href="#" class="active" data-memory-filter="all">▦ All Memories</a><a href="#" data-memory-filter="image">▧ Photos</a><a href="#" data-memory-filter="video">▶ Videos</a><a href="#" data-memory-filter="all">⌂ From Family</a><a href="#" data-memory-filter="all">♧ From Friends</a><a href="#" data-memory-filter="all">▣ From Colleagues</a></div><div class="memory-grid" id="memory-grid">${memoryCards || '<p class="muted">Memories will appear here.</p>'}</div></section>`;
+  const galleryView = `<section class="public-view" data-view="gallery">${viewHeader(`${escape(surprise.recipientName)}’s<br>Memories Gallery`, 'Photos & clips shared on the contribute link 💗', 'gallery')}<div class="search-box"><input id="memory-search" type="search" placeholder="⌕  Search memories..." aria-label="Search memories" /></div><div class="view-tabs secondary-tabs"><a href="#" class="active" data-memory-filter="all">▦ All (${memoryCount})</a><a href="#" data-memory-filter="image">▧ Photos (${photoCount})</a><a href="#" data-memory-filter="video">▶ Videos (${videoCount})</a></div><div class="memory-grid" id="memory-grid">${memoryCards || '<p class="muted">Contribute-link photos will appear here.</p>'}</div><div class="filter-empty" id="memory-empty"><strong>No memories yet</strong><span>Photos uploaded on the contribute link will show up here.</span></div>${soundCards ? `<h2 style="margin:28px 0 12px">Voice & music</h2><div class="memory-grid">${soundCards}</div>` : ''}</section>`;
   const thanksView = `<section class="public-view" data-view="thanks">${viewHeader('Thank You<br><span style="color:#ed1c83">Everyone!</span> 💗', 'You made this surprise feel extra special.', 'thanks')}${stats}<div class="thanks-card"><h2>My Message to You All</h2><p class="muted">Share a thank-you message with everyone who wished you.</p><textarea id="thanks-message" maxlength="500" placeholder="Write your thank-you message here..."></textarea><div style="text-align:right;color:#8a709f" id="thanks-count">0/500</div><button class="public-cta" id="thanks-submit">➤ &nbsp; Send Thank You Message</button><p id="thanks-status" class="error"></p><div class="share-row"><button type="button" onclick="window.open('https://wa.me/?text='+encodeURIComponent(location.href),'_blank')">🟢 WhatsApp</button><button type="button" onclick="navigator.clipboard?.writeText(location.href)">🔗 Copy Link</button><button type="button" onclick="window.open('https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(location.href),'_blank')">ⓕ Facebook</button><button type="button" onclick="navigator.share?.({title:document.title,url:location.href})">◎ More</button></div><p style="color:#b03d82;font-family:cursive;font-size:1.1rem;margin-top:24px">“Grateful for every wish, every message, every amazing person in my life.”</p></div></section>`;
 
   const publishedThanks = surprise.thankYouMessage
@@ -450,7 +480,7 @@ export function openRevealPage(surprise: {
     html: htmlPage(
       `${escape(surprise.title)} · WishDrop`,
       `<main class="surprise-app has-frame">${publishedThanks}<div id="public-views">${landing}${wishesView}${galleryView}${thanksView}</div><div class="lightbox" id="lightbox"><button class="lightbox-close" type="button" id="lightbox-close">Close</button><img id="lightbox-image" alt="Expanded memory" /></div></main>`,
-      `const views=document.querySelectorAll('[data-view]');const show=v=>{document.documentElement.dataset.view=v;views.forEach(el=>el.hidden=el.dataset.view!==v);history.replaceState(null,'','?view='+v);window.scrollTo({top:0,behavior:'smooth'})};window.show=show;show(new URLSearchParams(location.search).get('view')||'landing');document.querySelectorAll('.view-tabs a:not([data-filter]):not([data-memory-filter])').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();show(new URL(a.href).searchParams.get('view')||'landing')}));const filter=(input,selector,attr)=>input?.addEventListener('input',()=>{const q=input.value.toLowerCase();document.querySelectorAll(selector).forEach(card=>card.style.display=(card.getAttribute(attr)||card.textContent||'').toLowerCase().includes(q)?'':'none')});filter(document.getElementById('wish-search'),'#wish-grid .wish-card','data-search');filter(document.getElementById('memory-search'),'#memory-grid .memory-card','data-search');document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('[data-filter]').forEach(x=>x.classList.remove('active'));button.classList.add('active');const kind=button.dataset.filter;document.querySelectorAll('#wish-grid .wish-card').forEach(card=>card.style.display=kind==='all'||(card.dataset.kind||'').includes(kind)?'':'none')}));document.querySelectorAll('[data-memory-filter]').forEach(button=>button.addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('[data-memory-filter]').forEach(x=>x.classList.remove('active'));button.classList.add('active');const kind=button.dataset.memoryFilter;document.querySelectorAll('#memory-grid .memory-card').forEach(card=>card.style.display=kind==='all'||(card.querySelector('video')?'video':'image')===kind?'':'none')}));document.querySelectorAll('[data-lightbox]').forEach(card=>card.addEventListener('click',()=>{document.getElementById('lightbox-image').src=card.dataset.lightbox;document.getElementById('lightbox').classList.add('open')}));document.getElementById('lightbox-close').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));document.getElementById('thanks-message')?.addEventListener('input',e=>document.getElementById('thanks-count').textContent=e.target.value.length+'/500');document.getElementById('thanks-submit')?.addEventListener('click',async()=>{const message=document.getElementById('thanks-message').value.trim();const status=document.getElementById('thanks-status');if(!message){status.textContent='Write a message first.';return}status.textContent='Sending…';const token=location.pathname.split('/').pop();try{const res=await fetch('/v1/public/surprises/'+token+'/reactions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emoji:'💗',message})});if(!res.ok)throw new Error('Request failed');status.textContent='Thank-you message sent!';document.getElementById('thanks-message').value='';document.getElementById('thanks-count').textContent='0/500'}catch(error){status.textContent='Could not send your message. Please try again.'}});document.getElementById('music')?.addEventListener('click',()=>{document.getElementById('music').textContent='♫ Music coming soon';});`,
+      `const views=document.querySelectorAll('[data-view]');const show=v=>{document.documentElement.dataset.view=v;views.forEach(el=>el.hidden=el.dataset.view!==v);history.replaceState(null,'','?view='+v);window.scrollTo({top:0,behavior:'smooth'})};window.show=show;show(new URLSearchParams(location.search).get('view')||'landing');document.querySelectorAll('.view-tabs a:not([data-filter]):not([data-memory-filter])').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();show(new URL(a.href).searchParams.get('view')||'landing')}));const filter=(input,selector,attr)=>input?.addEventListener('input',()=>{const q=input.value.toLowerCase();document.querySelectorAll(selector).forEach(card=>card.style.display=(card.getAttribute(attr)||card.textContent||'').toLowerCase().includes(q)?'':'none')});filter(document.getElementById('wish-search'),'#wish-grid .wish-card','data-search');filter(document.getElementById('memory-search'),'#memory-grid .memory-card','data-search');document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('[data-filter]').forEach(x=>x.classList.remove('active'));button.classList.add('active');const kind=button.dataset.filter;document.querySelectorAll('#wish-grid .wish-card').forEach(card=>card.style.display=kind==='all'||(card.dataset.kind||'').includes(kind)?'':'none')}));const memoryEmpty=document.getElementById('memory-empty');const applyMemoryFilter=kind=>{let visible=0;document.querySelectorAll('#memory-grid .memory-card').forEach(card=>{const cardKind=card.dataset.kind||(card.querySelector('video')?'video':'image');const show=kind==='all'||cardKind===kind;card.style.display=show?'':'none';if(show)visible+=1});if(memoryEmpty){memoryEmpty.classList.toggle('visible',visible===0);const title=memoryEmpty.querySelector('strong');const copy=memoryEmpty.querySelector('span');if(title)title.textContent=kind==='video'?'No videos in this surprise':kind==='image'?'No photos in this surprise':'No memories yet';if(copy)copy.textContent=kind==='video'?'Switch back to All or Photos to see shared memories.':kind==='image'?'Switch back to All or Videos to see shared memories.':'Memories from friends and family will show up here.'}};document.querySelectorAll('[data-memory-filter]').forEach(button=>button.addEventListener('click',e=>{e.preventDefault();document.querySelectorAll('[data-memory-filter]').forEach(x=>x.classList.remove('active'));button.classList.add('active');applyMemoryFilter(button.dataset.memoryFilter||'all')}));document.querySelectorAll('[data-lightbox]').forEach(card=>card.addEventListener('click',()=>{document.getElementById('lightbox-image').src=card.dataset.lightbox;document.getElementById('lightbox').classList.add('open')}));document.getElementById('lightbox-close').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));document.getElementById('thanks-message')?.addEventListener('input',e=>document.getElementById('thanks-count').textContent=e.target.value.length+'/500');document.getElementById('thanks-submit')?.addEventListener('click',async()=>{const message=document.getElementById('thanks-message').value.trim();const status=document.getElementById('thanks-status');if(!message){status.textContent='Write a message first.';return}status.textContent='Sending…';const token=location.pathname.split('/').pop();try{const res=await fetch('/v1/public/surprises/'+token+'/reactions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emoji:'💗',message})});if(!res.ok)throw new Error('Request failed');status.textContent='Thank-you message sent!';document.getElementById('thanks-message').value='';document.getElementById('thanks-count').textContent='0/500'}catch(error){status.textContent='Could not send your message. Please try again.'}});document.getElementById('music')?.addEventListener('click',()=>{document.getElementById('music').textContent='♫ Music coming soon';});`,
     ),
   };
 }
@@ -474,11 +504,18 @@ export function pinRevealPage(token: string) {
       const { surprise } = await response.json();
       const main = document.getElementById('reveal');
       const media = Array.isArray(surprise.media) ? surprise.media : [];
-      const playable = media.filter(item => /^https?:\\/\\//i.test(item.uri || ''));
+      const toSrc = (uri) => {
+        try {
+          const parsed = new URL(uri, location.origin);
+          if (parsed.pathname.startsWith('/media/') || parsed.pathname.startsWith('/frames/')) return parsed.pathname + parsed.search;
+        } catch (_) {}
+        return uri;
+      };
+      const playable = media.filter(item => /^https?:\\/\\//i.test(item.uri || '') || String(item.uri || '').startsWith('/media/'));
       let mediaHtml = '';
       if (playable.length) {
         mediaHtml = '<div class="media">' + playable.map(item => {
-          const src = String(item.uri).replace(/"/g, '&quot;');
+          const src = String(toSrc(item.uri)).replace(/"/g, '&quot;');
           if (item.kind === 'video') return '<video controls playsinline preload="metadata" src="' + src + '"></video>';
           if (item.kind === 'audio' || item.kind === 'music') return '<audio controls src="' + src + '"></audio>';
           return '<img src="' + src + '" alt="" />';
