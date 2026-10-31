@@ -12,12 +12,15 @@ const media = mongoose.connection.collection('mediametas');
 const wishes = mongoose.connection.collection('wishes');
 const people = mongoose.connection.collection('people');
 const uploadsDir = path.join(process.cwd(), 'uploads');
+const uploadBucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db!, { bucketName: 'uploads' });
 
 async function purgeExpiredMedia() {
   const due = await media.find({ expiresAt: { $lte: new Date() } }).limit(50).toArray();
   for (const item of due) {
     const filename = String(item.filename ?? '');
-    if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/.test(filename)) {
+    if (/^[a-f\d]{24}$/i.test(filename)) {
+      await uploadBucket.delete(new mongoose.Types.ObjectId(filename)).catch(() => undefined);
+    } else if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9]+$/.test(filename)) {
       await fs.promises.unlink(path.join(uploadsDir, filename)).catch(() => undefined);
     }
     if (item.uri) {

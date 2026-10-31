@@ -11,6 +11,11 @@ type Models = {
   MediaMeta: mongoose.Model<any>;
   AppSettings: mongoose.Model<any>;
   AdminNotification: mongoose.Model<any>;
+  Frame: mongoose.Model<any>;
+  Reaction: mongoose.Model<any>;
+  Person: mongoose.Model<any>;
+  Job: mongoose.Model<any>;
+  Session: mongoose.Model<any>;
 };
 
 type Helpers = {
@@ -25,7 +30,8 @@ type Helpers = {
   hashToken: (token: string) => string;
   notFound: (message: string) => Error;
   uploadsDir: string;
-  unlinkSafe: (filename: string) => void;
+  unlinkSafe: (filename: string) => Promise<void>;
+  publicApiBaseUrl: string;
 };
 
 const pageQuery = z.object({
@@ -35,7 +41,7 @@ const pageQuery = z.object({
 });
 
 export function registerAdminRoutes(app: FastifyInstance, models: Models, helpers: Helpers) {
-  const { User, Surprise, Wish, Report, MediaMeta, AppSettings, AdminNotification } = models;
+  const { User, Surprise, Wish, Report, MediaMeta, AppSettings, AdminNotification, Frame, Reaction, Person, Job, Session } = models;
   const { auth, body, serializeSurprise, serializeWish, contributeUrl, contributeToken, ensureContributeToken, shareToken, hashToken, notFound, unlinkSafe } = helpers;
 
   const requireAdmin = async (request: any) => {
@@ -54,6 +60,7 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     id: String(user._id),
     name: user.name,
     email: user.email,
+    phoneNumber: user.phoneNumber,
     role: user.role ?? 'user',
     lifecycle: user.lifecycle ?? 'active',
     birthday: user.birthday,
@@ -71,6 +78,14 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     createdAt: item.createdAt?.toISOString(),
     resolvedAt: item.resolvedAt?.toISOString(),
   });
+  const serializeFrame = (item: any) => ({
+    id: String(item._id),
+    key: item.key,
+    title: item.title,
+    imageUrl: item.imageUrl,
+    active: item.active !== false,
+    sortOrder: item.sortOrder ?? 0,
+  });
 
   const getSettings = async () => {
     let settings = await AppSettings.findOne();
@@ -80,9 +95,71 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     return settings;
   };
 
+  const removeMedia = async (filter: Record<string, unknown>) => {
+    const media = await MediaMeta.find(filter);
+    await Promise.all(media.map(item => item.filename ? unlinkSafe(item.filename) : undefined));
+    await MediaMeta.deleteMany(filter);
+  };
+
+  const removeSurprise = async (id: string) => {
+    const surprise = await Surprise.findById(id);
+    if (!surprise) throw notFound('Surprise not found.');
+    const wishes = await Wish.find({ surpriseId: surprise._id });
+    await removeMedia({ $or: [{ surpriseId: surprise._id }, { uri: { $in: (surprise.media ?? []).map((item: any) => item.uri) } }, { uri: { $in: wishes.flatMap((wish: any) => (wish.media ?? []).map((item: any) => item.uri)) } }] });
+    await Promise.all([Wish.deleteMany({ surpriseId: surprise._id }), Report.deleteMany({ surpriseId: surprise._id }), Reaction.deleteMany({ surpriseId: surprise._id }), Job.deleteMany({ surpriseId: surprise._id }), Surprise.deleteOne({ _id: surprise._id })]);
+  };
+
   app.get('/v1/admin/me', async request => {
     const { user } = await requireAdmin(request);
     return { user: serializeUser(user) };
+  });
+
+  app.get('/v1/admin/frames', async request => {
+    await requireAdmin(request);
+    return { frames: (await Frame.find().sort({ sortOrder: 1, title: 1 })).map(serializeFrame) };
+  });
+
+  app.post('/v1/admin/frames', async request => {
+    await requireAdmin(request);
+    const input = body(
+      z.object({
+        key: z.string().trim().regex(/^[a-z0-9-]{2,40}$/),
+        title: z.string().trim().min(2).max(60),
+        imageUrl: z.string().url().max(2048),
+        active: z.boolean().default(true),
+        sortOrder: z.number().int().min(0).max(1000).default(0),
+      }),
+      request.body,
+    );
+    const frame = await Frame.create(input);
+    return { frame: serializeFrame(frame) };
+  });
+
+  app.patch('/v1/admin/frames/:id', async request => {
+    await requireAdmin(request);
+    const { id } = request.params as { id: string };
+    if (!mongoose.isValidObjectId(id)) throw notFound('Frame not found.');
+    const input = body(
+      z.object({
+        title: z.string().trim().min(2).max(60).optional(),
+        imageUrl: z.string().url().max(2048).optional(),
+        active: z.boolean().optional(),
+        sortOrder: z.number().int().min(0).max(1000).optional(),
+      }),
+      request.body,
+    );
+    const frame = await Frame.findByIdAndUpdate(id, input, { new: true });
+    if (!frame) throw notFound('Frame not found.');
+    return { frame: serializeFrame(frame) };
+  });
+
+  app.delete('/v1/admin/frames/:id', async request => {
+    await requireAdmin(request);
+    const { id } = request.params as { id: string };
+    if (!mongoose.isValidObjectId(id)) throw notFound('Frame not found.');
+    const frame = await Frame.findByIdAndDelete(id);
+    if (!frame) throw notFound('Frame not found.');
+    return { ok: true };
   });
 
   app.get('/v1/admin/stats', async request => {
@@ -225,6 +302,14 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     return { url: contributeUrl(token), invite: serializeSurprise(surprise).invite };
   });
 
+  app.delete('/v1/admin/surprises/:id', async request => {
+    await requireAdmin(request);
+    const { id } = request.params as { id: string };
+    if (!mongoose.isValidObjectId(id)) throw notFound('Surprise not found.');
+    await removeSurprise(id);
+    return { ok: true };
+  });
+
   app.post('/v1/admin/surprises/:id/invite/disable', async request => {
     await requireAdmin(request);
     const { id } = request.params as { id: string };
@@ -345,7 +430,7 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     const filter: Record<string, unknown> = { role: { $ne: 'admin' } };
     if (query.lifecycle) filter.lifecycle = query.lifecycle;
     if (query.q) {
-      filter.$or = [{ name: new RegExp(query.q, 'i') }, { email: new RegExp(query.q, 'i') }];
+      filter.$or = [{ name: new RegExp(query.q, 'i') }, { email: new RegExp(query.q, 'i') }, { phoneNumber: new RegExp(query.q, 'i') }];
     }
     const skip = (query.page - 1) * query.limit;
     const [items, total] = await Promise.all([
@@ -411,13 +496,27 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
     };
   });
 
+  app.delete('/v1/admin/users/:id', async request => {
+    const { payload } = await requireAdmin(request);
+    const { id } = request.params as { id: string };
+    if (!mongoose.isValidObjectId(id)) throw notFound('User not found.');
+    if (id === payload.sub) throw Object.assign(new Error('You cannot delete the signed-in administrator.'), { statusCode: 400 });
+    const user = await User.findById(id);
+    if (!user) throw notFound('User not found.');
+    if (user.role === 'admin') throw Object.assign(new Error('Admin accounts cannot be deleted here.'), { statusCode: 400 });
+    const surprises = await Surprise.find({ creatorId: id }).select('_id');
+    for (const surprise of surprises) await removeSurprise(String(surprise._id));
+    await Promise.all([Person.deleteMany({ ownerId: id }), Session.deleteMany({ userId: id }), User.deleteOne({ _id: id })]);
+    return { ok: true };
+  });
+
   app.delete('/v1/admin/media/:id', async request => {
     await requireAdmin(request);
     const { id } = request.params as { id: string };
     if (!mongoose.isValidObjectId(id)) throw notFound('Media not found.');
     const item = await MediaMeta.findByIdAndDelete(id);
     if (!item) throw notFound('Media not found.');
-    if (item.filename) unlinkSafe(item.filename);
+    if (item.filename) await unlinkSafe(item.filename);
     return { ok: true };
   });
 
@@ -530,6 +629,22 @@ export function registerAdminRoutes(app: FastifyInstance, models: Models, helper
         maxMediaUploadMb: settings.maxMediaUploadMb ?? 80,
       },
     };
+  });
+
+  app.post('/v1/admin/maintenance/clear', async request => {
+    const { payload } = await requireAdmin(request);
+    const input = body(z.object({ scope: z.enum(['content', 'all-data', 'sessions']), confirmation: z.literal('CLEAR') }), request.body);
+    if (input.scope === 'sessions') {
+      await Session.deleteMany({ userId: { $ne: payload.sub } });
+      return { ok: true, scope: input.scope };
+    }
+    const surprises = await Surprise.find().select('_id');
+    for (const surprise of surprises) await removeSurprise(String(surprise._id));
+    await Promise.all([Person.deleteMany({}), AdminNotification.deleteMany({}), Report.deleteMany({}), Reaction.deleteMany({}), Job.deleteMany({})]);
+    if (input.scope === 'all-data') {
+      await Promise.all([User.deleteMany({ _id: { $ne: payload.sub } }), Session.deleteMany({ userId: { $ne: payload.sub } })]);
+    }
+    return { ok: true, scope: input.scope };
   });
 }
 
